@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<title>Keyword Manager</title>
+
+<style>
+body{font-family:sans-serif;background:#0f172a;color:#fff;padding:20px}
+h1{margin-bottom:10px}
+.box{background:#111827;padding:15px;border-radius:10px;margin-bottom:10px}
+input,textarea{width:100%;padding:8px;margin-top:5px;background:#020617;color:#fff;border:1px solid #333;border-radius:6px}
+button{margin-top:8px;padding:6px 10px;border:none;border-radius:6px;background:#22c55e;color:#000;font-weight:bold;cursor:pointer}
+.del{background:#ef4444;color:#fff}
+.small{font-size:12px;color:#aaa;margin-top:4px}
+</style>
+</head>
+
+<body>
+
+<h1>จัดการ Keyword</h1>
+
+<div id="list"></div>
+
+<h2>เพิ่มใหม่</h2>
+<div class="box">
+<label>Keyword (คั่นด้วย ,)</label>
+<input id="newKey" />
+
+<label>ข้อความตอบ</label>
+<textarea id="newReply"></textarea>
+
+<label>อัปโหลดรูป</label>
+<input type="file" id="newImgFile" accept="image/*" />
+<div class="small" id="newImgName"></div>
+
+<button onclick="add()">เพิ่ม</button>
+</div>
+
+<script>
+
+// =======================
+// โหลด Keyword
+// =======================
+async function load(){
+  const res=await fetch("/api/keywords");
+  const data=await res.json();
+  const list=document.getElementById("list");
+  list.innerHTML="";
+
+  data.forEach((item,i)=>{
+    const div=document.createElement("div");
+    div.className="box";
+    div.innerHTML=`
+      <b>Keyword:</b>
+      <input value="${item.keywords.join(",")}" onchange="edit(${i},'key',this.value)">
+
+      <b>Reply:</b>
+      <textarea onchange="edit(${i},'reply',this.value)">${item.reply||""}</textarea>
+
+      <b>เปลี่ยนรูป:</b>
+      <input type="file" accept="image/*" onchange="uploadEditImage(event,${i})">
+      <div class="small">${item.image ? "รูปปัจจุบัน: "+item.image : "ไม่มีรูป"}</div>
+
+      <button class="del" onclick="del(${i})">ลบ</button>
+    `;
+    list.appendChild(div);
+  });
+
+  window._data=data;
+}
+
+// =======================
+// Upload รูปใหม่ (แก้ไข)
+// =======================
+async function uploadEditImage(e,i){
+  const file=e.target.files[0];
+  if(!file) return;
+
+  const formData=new FormData();
+  formData.append("image",file);
+
+  const res=await fetch("/api/upload",{method:"POST",body:formData});
+  const data=await res.json();
+
+  if(data.url){
+    window._data[i].image=data.url;
+    save();
+    load();
+  }
+}
+
+// =======================
+// Upload รูป (เพิ่มใหม่)
+// =======================
+async function uploadNewImage(){
+  const input=document.getElementById("newImgFile");
+  if(!input.files.length) return "";
+
+  const file=input.files[0];
+  document.getElementById("newImgName").innerText=file.name;
+
+  const formData=new FormData();
+  formData.append("image",file);
+
+  const res=await fetch("/api/upload",{method:"POST",body:formData});
+  const data=await res.json();
+  return data.url||"";
+}
+
+// =======================
+// Save
+// =======================
+async function save(){
+  await fetch("/api/keywords",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(window._data)
+  });
+}
+
+// =======================
+// Edit
+// =======================
+function edit(i,type,val){
+  if(type=="key") window._data[i].keywords=val.split(",").map(v=>v.trim());
+  if(type=="reply") window._data[i].reply=val;
+  save();
+}
+
+// =======================
+// Delete
+// =======================
+function del(i){
+  window._data.splice(i,1);
+  save().then(load);
+}
+
+// =======================
+// Add
+// =======================
+async function add(){
+  const k=document.getElementById("newKey").value;
+  const r=document.getElementById("newReply").value;
+
+  if(!k) return alert("ใส่ keyword");
+
+  const img=await uploadNewImage();
+
+  window._data.push({
+    keywords:k.split(",").map(v=>v.trim()),
+    reply:r,
+    image:img
+  });
+
+  document.getElementById("newKey").value="";
+  document.getElementById("newReply").value="";
+  document.getElementById("newImgFile").value="";
+  document.getElementById("newImgName").innerText="";
+
+  save().then(load);
+}
+
+load();
+</script>
+
+</body>
+</html>

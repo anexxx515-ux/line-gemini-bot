@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<title>LINE BOT Control</title>
+</head>
+
+<body style="font-family: Arial; padding:20px; background:#fff">
+
+<h2>LINE BOT Control Panel</h2>
+
+<label>LINE Channel Access Token</label><br>
+<input id="lineToken" style="width:100%; padding:6px;"><br><br>
+
+<label>Gemini API Key</label><br>
+<input id="geminiKey" style="width:100%; padding:6px;"><br><br>
+
+<button onclick="saveConfig()">Save Token</button>
+<button onclick="startBot()">Start Bot</button>
+<button onclick="stopBot()">Stop Bot</button>
+<button onclick="openKeyword()">Keyword</button>
+
+<h3>System Log</h3>
+
+<textarea id="log"
+style="width:100%; height:260px; font-family:Consolas; font-size:13px;"
+readonly></textarea>
+
+<script src="renderer.js"></script>
+</body>
+</html>
